@@ -1,0 +1,39 @@
+worked on Nov 11th
+
+admin dashboard change ( top 10 ) 
+language correction on worker side ( Tamil, Kannada , Hindi, English )
+AUTH account logout for 30 mins after 5 invalid attempts (Doudt on mobile otp login )
+consent terms for both ( worker and employer at a time ) on admin side and checked on worker and employer side 
+removed terms and conditions on employer side 
+add skills( experience for beginner, intermediate , advanced and expert )  on worker side and fixed the bug ( BUG-052) and ( BUG-051 )
+
+Worked on Nov 12th
+BUG-051
+BUG-052
+BUG-053
+BUG-054
+BUG-055
+BUG-056
+BUG-058 
+BUG-059
+BUG-060
+BUG-063
+BUG-064
+BUG-065
+BUG-066
+BUG-067
+BUG-068
+
+Worked on Nov 13th 
+FOR OTP i have done if they enter wrong password for 5 times his account will be locked out 
+Once they have reset the password they can login even theirs's account is locked out before 
+
+Nov 18th 
+
+worked on consent terms bug where it was creating two rows 
+worked on bulk worker upload with new skill to go requested skill 
+Added dropdowns for cities and states and even on excel which is there in bulk upload 
+
+
+NOV 19th 
+bugs on worker template in xl file and other bugs 
