@@ -9,14 +9,14 @@ import {
 export async function processDocument(
   documentId: number,
   filePath: string,
-  fileType: string
+  fileType: string,
 ): Promise<void> {
   try {
     await pool.query(
       `UPDATE documents
        SET status = 'processing'
        WHERE id = $1`,
-      [documentId]
+      [documentId],
     );
 
     const documents = await extractDocuments(filePath, fileType);
@@ -26,13 +26,15 @@ export async function processDocument(
       throw new Error("No text chunks were generated.");
     }
 
+    // console.log("documents", documents);
+    // console.log("chunks", chunks);
     await addDocumentChunks(documentId, chunks);
 
     await pool.query(
       `UPDATE documents
        SET status = 'completed'
        WHERE id = $1`,
-      [documentId]
+      [documentId],
     );
   } catch (error) {
     console.error("Document processing failed:", error);
@@ -40,7 +42,7 @@ export async function processDocument(
     // Drop partial chunks. The status stays 'processing' here: the queue may
     // retry, and the worker calls markDocumentFailed() after the last attempt.
     await deleteDocumentVectors(documentId).catch((cleanupError) =>
-      console.error("Failed to clean up vectors:", cleanupError)
+      console.error("Failed to clean up vectors:", cleanupError),
     );
 
     throw error;
@@ -53,6 +55,6 @@ export async function markDocumentFailed(documentId: number): Promise<void> {
     `UPDATE documents
      SET status = 'failed'
      WHERE id = $1`,
-    [documentId]
+    [documentId],
   );
 }

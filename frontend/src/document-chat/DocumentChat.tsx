@@ -3,6 +3,8 @@ import * as api from "./api";
 import HistoryPanel from "./HistoryPanel";
 import UploadZone from "./UploadZone";
 import type { ConversationSummary, Message, UploadedDocument } from "./types";
+import Icon from "../Icon";
+import { MessageBubble, TypingIndicator } from "../MessageBubble";
 
 const STORAGE_KEY = "documentChat.conversationId";
 
@@ -258,19 +260,28 @@ export default function DocumentChat() {
 
   return (
     <main className="chat">
-      <header>
-        <h1>
-          Document Chat
-          {conversationId !== null ? ` (#${conversationId})` : ""}
-        </h1>
+      <header className="chat-header document-chat-header">
+        <div className="chat-heading">
+          <span className="chat-title-icon documents"><Icon name="file" size={21} /></span>
+          <div>
+            <h1>Document assistant{conversationId !== null ? ` (#${conversationId})` : ""}</h1>
+            <p>Upload files and get answers grounded in their contents</p>
+          </div>
+        </div>
         <div className="header-actions">
           <button
             type="button"
+            className={`button button-secondary${showHistory ? " selected" : ""}`}
+            aria-expanded={showHistory}
             onClick={() => { void refreshHistory(); setShowHistory((s) => !s); }}
           >
-            History
+            <Icon name="history" size={17} />
+            <span>History</span>
           </button>
-          <button type="button" onClick={newChat}>New chat</button>
+          <button type="button" className="button button-secondary" onClick={newChat}>
+            <Icon name="plus" size={17} />
+            <span>New chat</span>
+          </button>
         </div>
       </header>
 
@@ -293,28 +304,36 @@ export default function DocumentChat() {
       <div className="messages" aria-live="polite">
         {messages.map((m, i) =>
           m.content === "" ? null : (
-            <div key={i} className={`msg ${m.role}`}>{m.content}</div>
+            <MessageBubble key={i} role={m.role} content={m.content} />
           )
         )}
-        {uploading && <div className="msg assistant typing">Processing document...</div>}
+        {uploading && <TypingIndicator label="Uploading document..." />}
         {/* Shown until the first token arrives */}
         {loading && messages[messages.length - 1]?.content === "" && (
-          <div className="msg assistant typing">Thinking...</div>
+          <TypingIndicator />
         )}
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={(e) => void handleSubmit(e)} autoComplete="off">
+      <form className="chat-composer" onSubmit={(e) => void handleSubmit(e)} autoComplete="off">
         <textarea
+          className="chat-input"
           rows={1}
           value={input}
           onKeyDown={onKeyDown}
           onChange={(e) => setInput(e.target.value)}
           placeholder={conversationId !== null ? "Ask about your documents... (Enter to send)" : "Upload a document first"}
           disabled={conversationId === null}
+          aria-label="Ask about your documents"
         />
-        <button type="submit" disabled={loading || conversationId === null || !input.trim()}>
-          Send
+        <button
+          type="submit"
+          className="button button-primary send-button"
+          disabled={loading || conversationId === null || !input.trim()}
+          aria-label="Send message"
+        >
+          <span>Send</span>
+          <Icon name="send" size={17} />
         </button>
       </form>
     </main>

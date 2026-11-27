@@ -1,4 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
+import Icon from "./Icon";
+import { MessageBubble, TypingIndicator } from "./MessageBubble";
+import { streamBasicChat } from "./chatStream";
 
 type Message = {
   role: "user" | "assistant" | "error";
@@ -14,6 +17,7 @@ export default function App() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatEpochRef = useRef(0);
+  const streamAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,32 +29,50 @@ export default function App() {
     if (!message || loading) return;
     const chatEpoch = chatEpochRef.current;
 
-    setMessages((prev) => [...prev, { role: "user", content: message }]);
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: message },
+      { role: "assistant", content: "" }
+    ]);
     setInput("");
     setLoading(true);
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, conversationId: conversationId ?? undefined })
+      await streamBasicChat(
+        message,
+        conversationId,
+        (id) => {
+          if (chatEpoch === chatEpochRef.current) setConversationId(id);
+        },
+        (token) => {
+          if (chatEpoch !== chatEpochRef.current) return;
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (!last || last.role !== "assistant") return prev;
+            return [...prev.slice(0, -1), { ...last, content: last.content + token }];
+          });
+        },
+        controller.signal
+      );
+    } catch (error) {
+      if (chatEpoch !== chatEpochRef.current) return;
+      setMessages((prev) => {
+        const last = prev[prev.length - 1];
+        return last?.role === "assistant" && last.content === ""
+          ? prev.slice(0, -1)
+          : prev;
       });
-      const json = await res.json();
-      if (chatEpoch !== chatEpochRef.current) return;
-
-      if (!res.ok || !json.success) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "error", content: json.message || "Something went wrong." }
-        ]);
-      } else {
-        setConversationId(json.data.conversationId);
-        setMessages((prev) => [...prev, { role: "assistant", content: json.data.reply }]);
-      }
-    } catch {
-      if (chatEpoch !== chatEpochRef.current) return;
-      setMessages((prev) => [...prev, { role: "error", content: "Could not reach the server." }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "error",
+          content: error instanceof Error ? error.message : "Something went wrong."
+        }
+      ]);
     } finally {
+      if (streamAbortRef.current === controller) streamAbortRef.current = null;
       if (chatEpoch === chatEpochRef.current) {
         setLoading(false);
       }
@@ -58,6 +80,8 @@ export default function App() {
   }
 
   function newChat() {
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
     chatEpochRef.current += 1;
     setConversationId(null);
     setMessages([GREETING]);
@@ -67,27 +91,48 @@ export default function App() {
 
   return (
     <main className="chat">
-      <header>
-        <h1>AI Assistant</h1>
-        <button type="button" onClick={newChat}>New chat</button>
+      <header className="chat-header">
+        <div className="chat-heading">
+          <span className="chat-title-icon"><Icon name="chat" size={21} /></span>
+          <div>
+            <h1>AI Assistant</h1>
+            <p>A simple conversational assistant</p>
+          </div>
+        </div>
+        <button type="button" className="button button-secondary" onClick={newChat}>
+          <Icon name="plus" size={17} />
+          <span>New chat</span>
+        </button>
       </header>
 
       <div className="messages" aria-live="polite">
         {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>{m.content}</div>
+          m.role === "assistant" && m.content === ""
+            ? null
+            : <MessageBubble key={i} role={m.role} content={m.content} />
         ))}
-        {loading && <div className="msg assistant typing">Thinking...</div>}
+        {loading && messages[messages.length - 1]?.content === "" && <TypingIndicator />}
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={handleSubmit} autoComplete="off">
+      <form className="chat-composer" onSubmit={handleSubmit} autoComplete="off">
         <input
+          className="chat-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your message..."
+          placeholder="Message your assistant..."
           autoFocus
+          aria-label="Message your assistant"
         />
-        <button type="submit" disabled={loading || !input.trim()}>Send</button>
+        <button
+          type="submit"
+          className="button button-primary send-button"
+          disabled={loading || !input.trim()}
+          aria-label="Send message"
+        >
+          <span>Send</span>
+          <Icon name="send" size={17} />
+        </button>
       </form>
     </main>
   );

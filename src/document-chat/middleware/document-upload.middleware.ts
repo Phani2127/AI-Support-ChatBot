@@ -12,6 +12,9 @@ const allowedMimeTypes = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "text/plain",
   "text/csv",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
 ];
 
 // Saves uploads to disk under a random name so files never overwrite each other.

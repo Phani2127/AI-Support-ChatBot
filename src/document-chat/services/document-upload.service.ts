@@ -13,7 +13,18 @@ export interface UploadedDocument {
   created_at: Date;
 }
 
-const ALLOWED_EXTENSIONS = [".pdf", ".xlsx", ".xls", ".docx", ".txt", ".csv"];
+const ALLOWED_EXTENSIONS = [
+  ".pdf",
+  ".xlsx",
+  ".xls",
+  ".docx",
+  ".txt",
+  ".csv",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+];
 
 // Signature-checked formats: the detected MIME must match the extension.
 const EXPECTED_MIME: Record<string, { mime: string; error: string }> = {
@@ -27,6 +38,10 @@ const EXPECTED_MIME: Record<string, { mime: string; error: string }> = {
     mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     error: "Invalid Word document.",
   },
+  ".png": { mime: "image/png", error: "Invalid PNG image." },
+  ".jpg": { mime: "image/jpeg", error: "Invalid JPEG image." },
+  ".jpeg": { mime: "image/jpeg", error: "Invalid JPEG image." },
+  ".webp": { mime: "image/webp", error: "Invalid WebP image." },
 };
 
 /** Verify the stored file really is what its extension claims. Throws if not. */

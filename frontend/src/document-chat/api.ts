@@ -12,8 +12,8 @@ function toDocument(d: { id: number; file_name: string; status?: string }): Uplo
 const BASE = "/api/document-chat";
 
 /** Accepted upload types; keep in sync with the backend validation. */
-export const ACCEPTED_FILES = ".pdf,.docx,.xlsx,.xls,.txt,.csv";
-export const ACCEPTED_LABEL = "PDF, Word, Excel, TXT, CSV";
+export const ACCEPTED_FILES = ".pdf,.docx,.xlsx,.xls,.txt,.csv,.png,.jpg,.jpeg,.webp";
+export const ACCEPTED_LABEL = "PDF, Word, Excel, TXT, CSV, PNG, JPG, WebP";
 
 // Every function throws an Error whose message is safe to show the user.
 async function request(url: string, init?: RequestInit) {

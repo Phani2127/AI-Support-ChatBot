@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
-import { generateAIResponse } from "../services/ai.service.js";
+import {
+  generateAIResponse,
+  streamAIResponse
+} from "../services/ai.service.js";
 import {
   createConversation,
   getConversation,
@@ -68,5 +71,94 @@ export async function chatController(
       success: false,
       message: "Something went wrong while processing your request"
     });
+  }
+}
+
+export async function streamChatController(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const { conversationId, message } = (req.body ?? {}) as Partial<ChatRequest>;
+
+  if (typeof message !== "string" || !message.trim()) {
+    res.status(400).json({
+      success: false,
+      message: "A valid message is required"
+    });
+    return;
+  }
+
+  let id: string;
+  if (conversationId === undefined) {
+    id = createConversation();
+  } else if (typeof conversationId === "string" && getConversation(conversationId)) {
+    id = conversationId;
+  } else {
+    res.status(404).json({
+      success: false,
+      message: "Conversation not found"
+    });
+    return;
+  }
+
+  const history = getConversation(id);
+  if (!history) {
+    res.status(404).json({
+      success: false,
+      message: "Conversation not found"
+    });
+    return;
+  }
+
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no"
+  });
+  res.flushHeaders();
+
+  const controller = new AbortController();
+  res.on("close", () => {
+    if (!res.writableEnded) controller.abort();
+  });
+
+  const sendEvent = (data: object) => {
+    if (!res.writableEnded && !controller.signal.aborted) {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    }
+  };
+
+  sendEvent({ conversationId: id });
+  const userMessage = message.trim();
+  let reply = "";
+
+  try {
+    await streamAIResponse(
+      [...history, { role: "user", content: userMessage }],
+      (token) => {
+        reply += token;
+        sendEvent({ token });
+      },
+      controller.signal
+    );
+
+    if (controller.signal.aborted) return;
+
+    if (!reply.trim()) {
+      reply = "I couldn't generate a response.";
+      sendEvent({ token: reply });
+    }
+
+    saveMessage(id, { role: "user", content: userMessage });
+    saveMessage(id, { role: "assistant", content: reply });
+    sendEvent({ done: true });
+    res.end();
+  } catch (error) {
+    if (controller.signal.aborted) return;
+
+    console.error("Streaming chat controller error:", error);
+    sendEvent({ error: "Something went wrong while processing your request." });
+    res.end();
   }
 }

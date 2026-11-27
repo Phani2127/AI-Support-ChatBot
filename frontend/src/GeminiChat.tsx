@@ -1,4 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
+import Icon from "./Icon";
+import { MessageBubble, TypingIndicator } from "./MessageBubble";
 
 type Message = {
   role: "user" | "assistant" | "error";
@@ -133,37 +135,57 @@ export default function GeminiChat() {
 
   return (
     <main className="chat">
-      <header>
-        <h1>Gemini Support (FAQ + Orders)</h1>
-        <button type="button" onClick={newChat}>
-          New chat{conversationId ? ` (#${conversationId})` : ""}
+      <header className="chat-header">
+        <div className="chat-heading">
+          <span className="chat-title-icon support"><Icon name="headset" size={21} /></span>
+          <div>
+            <h1>Customer support</h1>
+            <p>Answers from FAQs, with live order lookup</p>
+          </div>
+        </div>
+        <button type="button" className="button button-secondary" onClick={newChat}>
+          <Icon name="plus" size={17} />
+          <span>New chat{conversationId ? ` (#${conversationId})` : ""}</span>
         </button>
       </header>
 
-      <div className="samples">
-        {SAMPLES.map((s) => (
-          <button key={s} type="button" disabled={loading} onClick={() => void send(s)}>
-            {s}
-          </button>
-        ))}
+      <div className="sample-prompts">
+        <span className="sample-heading"><Icon name="sparkles" size={15} /> Try a prompt</span>
+        <div className="samples">
+          {SAMPLES.map((s) => (
+            <button key={s} type="button" disabled={loading} onClick={() => void send(s)}>
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="messages" aria-live="polite">
         {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>{m.content}</div>
+          <MessageBubble key={i} role={m.role} content={m.content} />
         ))}
-        {loading && <div className="msg assistant typing">Thinking...</div>}
+        {loading && <TypingIndicator />}
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={handleSubmit} autoComplete="off">
+      <form className="chat-composer" onSubmit={handleSubmit} autoComplete="off">
         <input
+          className="chat-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your message..."
+          placeholder="Ask a support question..."
           autoFocus
+          aria-label="Ask customer support"
         />
-        <button type="submit" disabled={loading || !input.trim()}>Send</button>
+        <button
+          type="submit"
+          className="button button-primary send-button"
+          disabled={loading || !input.trim()}
+          aria-label="Send message"
+        >
+          <span>Send</span>
+          <Icon name="send" size={17} />
+        </button>
       </form>
     </main>
   );

@@ -1,11 +1,12 @@
 import { DragEvent, useRef, useState } from "react";
 import { ACCEPTED_FILES, ACCEPTED_LABEL } from "./api";
 import type { DocumentStatus, UploadedDocument } from "./types";
+import Icon, { type IconName } from "../Icon";
 
-const STATUS_ICON: Record<DocumentStatus, string> = {
-  processing: "⏳",
-  completed: "✓",
-  failed: "✕"
+const STATUS_ICON: Record<DocumentStatus, IconName> = {
+  processing: "clock",
+  completed: "check",
+  failed: "alert"
 };
 const STATUS_LABEL: Record<DocumentStatus, string> = {
   processing: "Processing...",
@@ -54,9 +55,15 @@ export default function UploadZone({ documents, uploading, deletingId, onFiles, 
           disabled={uploading}
           onChange={(e) => pick(Array.from(e.target.files ?? []))}
         />
-        {uploading
-          ? "Processing document..."
-          : `Drop files here or click to upload (${ACCEPTED_LABEL})`}
+        <span className="upload-icon"><Icon name="upload" size={21} /></span>
+        <span className="upload-copy">
+          <strong>{uploading ? "Uploading your documents..." : "Add documents to your conversation"}</strong>
+          <span>{uploading ? "Your files will be searchable when processing finishes" : `Drop files here or click to browse · ${ACCEPTED_LABEL}`}</span>
+        </span>
+        <span className="upload-action">
+          <Icon name="plus" size={16} />
+          Browse files
+        </span>
       </label>
 
       {documents.length > 0 && (
@@ -67,7 +74,7 @@ export default function UploadZone({ documents, uploading, deletingId, onFiles, 
               className={`doc-chip ${document.status}`}
               title={`${document.file_name} — ${STATUS_LABEL[document.status]}`}
             >
-              <span className="doc-status">{STATUS_ICON[document.status]}</span>
+              <span className="doc-status"><Icon name={STATUS_ICON[document.status]} size={14} /></span>
               <span className="doc-name">{document.file_name}</span>
               <button
                 type="button"
@@ -77,7 +84,7 @@ export default function UploadZone({ documents, uploading, deletingId, onFiles, 
                 disabled={deletingId !== null}
                 onClick={() => onDelete(document.id)}
               >
-                {deletingId === document.id ? "..." : "×"}
+                {deletingId === document.id ? <span className="delete-loading" /> : <Icon name="trash" size={13} />}
               </button>
             </span>
           ))}

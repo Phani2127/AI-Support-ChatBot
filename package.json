@@ -7,7 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "tsx --test src/document-chat/services/document-vector-store.service.test.ts",
     "dev:frontend": "vite",
     "ingest:faqs": "tsx src/scripts/ingest-faqs.ts",
     "test:search": "tsx src/scripts/test-search.ts",
@@ -25,6 +25,7 @@
     "@langchain/google-genai": "^2.3.7",
     "@langchain/pgvector": "^0.1.0",
     "@langchain/textsplitters": "^1.0.2",
+    "@napi-rs/canvas": "^0.1.80",
     "bullmq": "^6.7.10",
     "cors": "^2.8.6",
     "dotenv": "^18.0.10",
@@ -35,9 +36,11 @@
     "mammoth": "^1.13.0",
     "multer": "^2.5.0",
     "pdf-parse": "^2.4.5",
+    "pdfjs-dist": "^5.4.296",
     "pg": "^8.23.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "tesseract.js": "^7.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

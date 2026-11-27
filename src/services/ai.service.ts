@@ -48,3 +48,59 @@ export async function generateAIResponse(
 
   throw lastError;
 }
+
+export async function streamAIResponse(
+  history: ChatMessage[],
+  onToken: (token: string) => void | Promise<void>,
+  signal?: AbortSignal
+): Promise<void> {
+  const contents = history.map((message) => ({
+    role: message.role === "assistant" ? "model" : "user",
+    parts: [{ text: message.content }]
+  }));
+
+  let lastError: unknown;
+
+  for (const model of [PRIMARY_MODEL, ...FALLBACK_MODELS]) {
+    const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+    const abortSignal = signal
+      ? AbortSignal.any([signal, timeoutSignal])
+      : timeoutSignal;
+    let emittedText = false;
+
+    try {
+      const stream = await client.models.generateContentStream({
+        model,
+        contents,
+        config: {
+          systemInstruction: ASSISTANT_PROMPT,
+          abortSignal
+        }
+      });
+
+      for await (const chunk of stream) {
+        if (signal?.aborted) {
+          throw signal.reason ?? new DOMException("The request was aborted.", "AbortError");
+        }
+
+        const token = chunk.text ?? "";
+        if (!token) continue;
+
+        emittedText = true;
+        await onToken(token);
+      }
+
+      return;
+    } catch (error) {
+      if (signal?.aborted) throw error;
+
+      lastError = error;
+      if (emittedText) throw error;
+      if (!isRetryable(error) && !timeoutSignal.aborted) throw error;
+
+      console.warn(`Model ${model} unavailable, trying next model...`);
+    }
+  }
+
+  throw lastError;
+}

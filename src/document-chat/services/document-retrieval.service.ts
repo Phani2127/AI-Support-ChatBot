@@ -27,7 +27,7 @@ async function getSearchableDocuments(
   return new Map(result.rows.map((row) => [Number(row.id), row.file_name as string]));
 }
 
-/** The chunks most similar to the question, across the conversation's completed documents. */
+/** Hybrid-search chunks across the conversation's completed documents. */
 export async function retrieveDocumentChunks(
   conversationId: number,
   question: string
