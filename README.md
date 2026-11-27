@@ -28,6 +28,13 @@ Reciprocal Rank Fusion (RRF) before passing context to the language model.
   and PDFs that contain no selectable text.
 - PostgreSQL storage with pgvector embeddings and PostgreSQL full-text search.
 
+## Frontend workspace
+
+The root page (`/`) is a dashboard introducing the application, its RAG workflow,
+and shortcuts to each workspace. The navigation includes basic chat
+(`/basic-chat`), FAQ and order support (`/gemini-chat`), and document chat
+(`/document-chat`). A theme toggle switches between light and dark appearance.
+
 ## Technology
 
 | Area | Technology in this project |

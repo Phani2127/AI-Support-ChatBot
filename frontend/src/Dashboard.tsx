@@ -1,64 +1,30 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import App from "./App";
 import GeminiChat from "./GeminiChat";
 import DocumentChat from "./document-chat/DocumentChat";
+import DashboardHome from "./DashboardHome";
+import { DASHBOARD_ROUTES, type DashboardRoute } from "./dashboardRoutes";
 import Icon, { type IconName } from "./Icon";
 
-// To add a new test page: add an entry here.
 type Tool = {
-  path: string;
+  path: DashboardRoute;
   label: string;
   icon: IconName;
-  render: () => ReactNode;
 };
 
 type Theme = "light" | "dark";
 const THEME_STORAGE_KEY = "supportDesk.theme";
 
-function Health() {
-  const [result, setResult] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function check() {
-    setLoading(true);
-    try {
-      const res = await fetch("/health");
-      setResult(`${res.status}\n${JSON.stringify(await res.json(), null, 2)}`);
-    } catch {
-      setResult("Could not reach the backend. Is it running (and does the proxy port match)?");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <main className="chat health-panel">
-      <div className="health-heading">
-        <span className="chat-title-icon"><Icon name="activity" size={21} /></span>
-        <div>
-          <h1>Backend health</h1>
-          <p>Check that the API is reachable.</p>
-        </div>
-      </div>
-      <button type="button" className="button button-primary" onClick={check} disabled={loading}>
-        <Icon name="activity" />
-        {loading ? "Checking..." : "Run health check"}
-      </button>
-      {result && <pre>{result}</pre>}
-    </main>
-  );
-}
-
 const TOOLS: Tool[] = [
-  { path: "/", label: "Basic chat", icon: "chat", render: () => <App /> },
-  { path: "/gemini-chat", label: "FAQ + orders", icon: "headset", render: () => <GeminiChat /> },
-  { path: "/document-chat", label: "Documents", icon: "file", render: () => <DocumentChat /> },
-  { path: "/health", label: "API status", icon: "activity", render: () => <Health /> }
+  { path: DASHBOARD_ROUTES.home, label: "Dashboard", icon: "sparkles" },
+  { path: DASHBOARD_ROUTES.basicChat, label: "Basic chat", icon: "chat" },
+  { path: DASHBOARD_ROUTES.supportChat, label: "FAQ + orders", icon: "headset" },
+  { path: DASHBOARD_ROUTES.documentChat, label: "Documents", icon: "file" }
 ];
 
-function currentTool(): Tool {
+function currentPath(): DashboardRoute {
   const path = window.location.pathname.replace(/\/$/, "") || "/";
-  return TOOLS.find((t) => t.path === path) ?? TOOLS[0];
+  return TOOLS.find((tool) => tool.path === path)?.path ?? DASHBOARD_ROUTES.home;
 }
 
 function getInitialTheme(): Theme {
@@ -75,12 +41,13 @@ function getInitialTheme(): Theme {
 }
 
 export default function Dashboard() {
-  const [active, setActive] = useState<Tool>(currentTool);
+  const [activePath, setActivePath] = useState(currentPath);
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const active = TOOLS.find((tool) => tool.path === activePath) ?? TOOLS[0];
 
   // Keep tab in sync with browser back/forward
   useEffect(() => {
-    const onPop = () => setActive(currentTool());
+    const onPop = () => setActivePath(currentPath());
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
@@ -94,9 +61,22 @@ export default function Dashboard() {
     }
   }, [theme]);
 
-  function open(tool: Tool) {
-    window.history.pushState(null, "", tool.path);
-    setActive(tool);
+  function open(path: DashboardRoute) {
+    window.history.pushState(null, "", path);
+    setActivePath(path);
+  }
+
+  function renderActivePage() {
+    switch (active.path) {
+      case DASHBOARD_ROUTES.basicChat:
+        return <App />;
+      case DASHBOARD_ROUTES.supportChat:
+        return <GeminiChat />;
+      case DASHBOARD_ROUTES.documentChat:
+        return <DocumentChat />;
+      default:
+        return <DashboardHome onNavigate={open} />;
+    }
   }
 
   return (
@@ -105,7 +85,7 @@ export default function Dashboard() {
         <div className="app-brand">
           <span className="brand-mark"><Icon name="sparkles" size={22} /></span>
           <span className="brand-copy">
-            <strong>Support<span>Desk</span></strong>
+            <strong><span>AI</span> Customer Support</strong>
             <small>AI workspace</small>
           </span>
         </div>
@@ -119,7 +99,7 @@ export default function Dashboard() {
               aria-current={tool.path === active.path ? "page" : undefined}
               aria-label={tool.label}
               title={tool.label}
-              onClick={() => open(tool)}
+              onClick={() => open(tool.path)}
             >
               <Icon name={tool.icon} size={17} />
               <span>{tool.label}</span>
@@ -143,7 +123,7 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      <div className="dash-content" key={active.path}>{active.render()}</div>
+      <div className="dash-content" key={active.path}>{renderActivePage()}</div>
     </div>
   );
 }
